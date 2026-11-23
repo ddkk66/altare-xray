@@ -1,7 +1,8 @@
+
 import os
 import base64
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 
 UUID = os.environ["UUID"]
 WS_PATH = os.environ["WS_PATH"]
@@ -15,29 +16,30 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(404)
             return
 
-        name = "Altare-Stockholm"
-        params = (
-            "encryption=none"
-            "&security=tls"
-            "&sni=" + quote(NODE_HOST, safe="")
-            "&type=ws"
-            "&host=" + quote(NODE_HOST, safe="")
-            "&path=" + quote(WS_PATH, safe="")
-            "&fp=chrome"
-        )
+        params = urlencode({
+            "encryption": "none",
+            "security": "tls",
+            "sni": NODE_HOST,
+            "type": "ws",
+            "host": NODE_HOST,
+            "path": WS_PATH,
+            "fp": "chrome"
+        })
 
         link = (
-            "vless://" + UUID + "@" + NODE_HOST +
-            ":443?" + params + "#" + quote(name)
+            f"vless://{UUID}@{NODE_HOST}:443?"
+            f"{params}#{quote('Altare-Stockholm')}"
         )
 
-        result = base64.b64encode(link.encode()).decode()
+        result = base64.b64encode(
+            link.encode("utf-8")
+        ).decode("ascii")
 
         self.send_response(200)
         self.send_header("Content-Type", "text/plain; charset=utf-8")
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
-        self.wfile.write(result.encode())
+        self.wfile.write(result.encode("ascii"))
 
     def log_message(self, format, *args):
         print(format % args)
